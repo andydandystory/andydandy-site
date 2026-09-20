@@ -1,22 +1,45 @@
 <!DOCTYPE html>
 <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <title>andydandy's site</title>
-    </head>
-    <body>
-        <h1>あんどうだいすけのホームページへようこそ！</h1><p>あなたは <span id="visits">...</span> 人目の訪問者です！</p>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>andydandy's site</title>
+</head>
+<body>
+  <h1>あんどうだいすけのホームページへようこそ！</h1>
+  <p>あなたは <strong id="visits" style="font-size: 1.2em; color: #0056b3;">...</strong> 人目の訪問者です！</p>
+  <p>現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
 
-<script>
-  fetch('https://api.countapi.xyz/hit/andydandystory-site/visits')
-    .then(res => res.json())
-    .then(res => {
-      document.getElementById('visits').innerText = res.value;
-    })
-    .catch(() => {
-      document.getElementById('visits').innerText = '1';
+  <!-- Firebase SDK の読み込み -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <script>
+    // 取得したFirebaseの設定情報
+    const firebaseConfig = {
+      apiKey: "AIzaSyDI8r96z1uTknyR55BED-2Fz7xMZ1bQEGc",
+      authDomain: "andydandy-counter.firebaseapp.com",
+      databaseURL: "https://andydandy-counter-default-rtdb.firebaseio.com",
+      projectId: "andydandy-counter",
+      storageBucket: "andydandy-counter.firebasestorage.app",
+      messagingSenderId: "926692747756",
+      appId: "1:926692747756:web:118fa114470e9f0dfbb8c9",
+      measurementId: "G-6DEMK9DLNG"
+    };
+
+    // Firebaseの初期化
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const counterRef = database.ref('visits');
+
+    // ページを開いたときに訪問者数を1増やす処理
+    counterRef.transaction((currentValue) => {
+      return (currentValue || 0) + 1;
+    }, (error, committed, snapshot) => {
+      if (snapshot) {
+        document.getElementById('visits').innerText = snapshot.val();
+      }
     });
-</script>
-        <p>現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
-    </body>
+  </script>
+</body>
 </html>
