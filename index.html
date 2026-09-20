@@ -5,8 +5,18 @@
         <title>andydandy's site</title>
     </head>
     <body>
-        <h1>あんどうだいすけのホームページへようこそ！</h1>
-        <p>あなたは <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fandydandystory.github.io%2Fandydandy-site%2F&count_bg=%23795548&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=VISITOR&edge_flat=false" alt="アクセスカウンター" /> 人目の訪問者です！</p>
+        <h1>あんどうだいすけのホームページへようこそ！</h1><p>あなたは <span id="visits">...</span> 人目の訪問者です！</p>
+
+<script>
+  fetch('https://api.countapi.xyz/hit/andydandystory-site/visits')
+    .then(res => res.json())
+    .then(res => {
+      document.getElementById('visits').innerText = res.value;
+    })
+    .catch(() => {
+      document.getElementById('visits').innerText = '1';
+    });
+</script>
         <p>現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
     </body>
 </html>
