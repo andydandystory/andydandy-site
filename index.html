@@ -2,20 +2,153 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <!-- スマホの画面サイズに自動で綺麗に合わせるおまじない（必須） -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>andydandy's site</title>
+  <style>
+    /* 全体のアウトライン（PCで広がりすぎないように中央寄せ） */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px; /* PCでの最大幅 */
+      margin: 0 auto;   /* 中央寄せ */
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    
+    /* ヘッダーカード（四角枠＆センタリング） */
+    .header-card {
+      background: #fff;
+      padding: 30px 20px;
+      border-radius: 8px;
+      text-align: center; /* 中身をすべて中央揃え */
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    /* レトロカッコいい3行タイトル */
+    .main-title-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .main-title {
+      font-size: 1.5em;
+      font-weight: bold;
+      line-height: 1.5;
+      color: #111;
+      width: 100%;
+      max-width: 280px; /* タイトル幅を制限して位置を固定 */
+    }
+
+    .line-1 {
+      display: block;
+      text-align: left;
+    }
+
+    .line-2 {
+      display: block;
+      text-align: center;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .line-3 {
+      display: block;
+      text-align: right;
+    }
+
+    .counter-text {
+      font-size: 1.1em;
+      margin: 10px 0;
+      color: #444;
+    }
+
+    .subtitle-text {
+      font-size: 0.9em;
+      color: #666;
+      margin: 8px 0 0 0;
+    }
+
+    /* 読書コーナーの配置（画面幅に合わせて柔軟に変形） */
+    .book-container {
+      display: flex;
+      flex-wrap: wrap; /* 画面が狭くなったら自動で下段に折り返す */
+      gap: 15px;
+      align-items: flex-start;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .book-cover {
+      width: 90px;
+      height: auto;
+      border-radius: 4px;
+      object-fit: cover;
+      background-color: #eee;
+    }
+
+    .book-info {
+      flex: 1;
+      min-width: 200px; /* 文字エリアが狭くなりすぎないように維持 */
+    }
+
+    .book-title {
+      margin: 0 0 8px 0;
+      font-size: 1.1em;
+      font-weight: bold;
+    }
+
+    .book-review {
+      margin: 0;
+      color: #555;
+      font-size: 0.95em;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 <body>
-  <h1>あんどうだいすけのホームページへようこそ！</h1>
-  <p>あなたは <strong id="visits" style="font-size: 1.2em; color: #0056b3;">...</strong> 人目の訪問者です！</p>
-  <p>現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
+
+  <!-- ヘッダーカード領域 -->
+  <div class="header-card">
+    <div class="main-title-container">
+      <h1 class="main-title">
+        <span class="line-1">あんどうだいすけ</span>
+        <span class="line-2">の</span>
+        <span class="line-3">ザ・ホームページ</span>
+      </h1>
+    </div>
+    <p class="counter-text">
+      あなたは <strong id="visits" style="font-size: 1.3em; color: #0056b3;">...</strong> 人目の訪問者です！
+    </p>
+    <p class="subtitle-text">現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
+  </div>
+
+  <!-- 最近読み終わった本コーナー -->
+  <section>
+    <h2 style="font-size: 1.2em; color: #333; margin-bottom: 12px;">📖 最近読み終わった本</h2>
+    
+    <div class="book-container">
+      <!-- 表紙画像 -->
+      <img id="book-cover" src="" alt="表紙画像" class="book-cover" style="display: none;">
+      
+      <!-- 本の情報と感想 -->
+      <div class="book-info">
+        <h3 id="book-title" class="book-title">読み込み中...</h3>
+        <p id="book-review" class="book-review">情報を取得しています...</p>
+      </div>
+    </div>
+  </section>
 
   <!-- Firebase SDK の読み込み -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
   <script>
-    // 取得したFirebaseの設定情報
     const firebaseConfig = {
       apiKey: "AIzaSyDI8r96z1uTknyR55BED-2Fz7xMZ1bQEGc",
       authDomain: "andydandy-counter.firebaseapp.com",
@@ -27,17 +160,38 @@
       measurementId: "G-6DEMK9DLNG"
     };
 
-    // Firebaseの初期化
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    const counterRef = database.ref('visits');
 
-    // ページを開いたときに訪問者数を1増やす処理
+    // 1. アクセスカウントの更新
+    const counterRef = database.ref('visits');
     counterRef.transaction((currentValue) => {
       return (currentValue || 0) + 1;
     }, (error, committed, snapshot) => {
       if (snapshot) {
         document.getElementById('visits').innerText = snapshot.val();
+      }
+    });
+
+    // 2. 読書データのリアルタイム更新
+    const bookRef = database.ref('now/book');
+    bookRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const authorStr = data.author ? ` ${data.author}` : "";
+        document.getElementById('book-title').innerText = `『${data.title || "無題"}』${authorStr}`;
+        document.getElementById('book-review').innerText = data.review || "";
+        
+        const coverImg = document.getElementById('book-cover');
+        if (data.coverUrl && data.coverUrl.trim() !== "") {
+          coverImg.src = data.coverUrl;
+          coverImg.style.display = "block";
+        } else {
+          coverImg.style.display = "none";
+        }
+      } else {
+        document.getElementById('book-title').innerText = "まだ本が登録されていません";
+        document.getElementById('book-review').innerText = "専用メールに送信するとここに表示されます。";
       }
     });
   </script>
