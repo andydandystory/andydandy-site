@@ -34,8 +34,12 @@ jobs:
           // 各メディアの直接RSS/AtomフィードURL
           const FEEDS = [
             { type: "note", url: "https://note.com/andydandystory/rss" },
+            // ジャンク修理（標準フィード）
             { type: "yt-repair", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCnN8E4C4uQzY0y1g9N1y1A" },
-            { type: "yt-talk", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UC6-AwddczjrLZ8VaoW5-_6g" }
+            // 雑談チャンネル（標準フィード）
+            { type: "yt-talk", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UC6-AwddczjrLZ8VaoW5-_6g" },
+            // 雑談チャンネル（ライブ配信アーカイブ専用フィード）
+            { type: "yt-talk", url: "https://www.youtube.com/feeds/videos.xml?playlist_id=UULV6-AwddczjrLZ8VaoW5-_6g" }
           ];
 
           async function main() {
@@ -79,7 +83,7 @@ jobs:
                     });
                   });
                 } else {
-                  // YouTube (Atomフィード) - ライブ配信アーカイブも含む
+                  // YouTube (Atomフィード) - 通常動画 ＋ ライブ配信アーカイブ
                   if (!result || !result.feed || !result.feed.entry) continue;
                   const entries = result.feed.entry || [];
                   const entryList = Array.isArray(entries) ? entries : [entries];
@@ -110,9 +114,18 @@ jobs:
               }
             }
 
+            // 重複コンテンツ（同じURLの動画など）を除去
+            const uniqueMap = new Map();
+            allItems.forEach(item => {
+              if (!uniqueMap.has(item.link)) {
+                uniqueMap.set(item.link, item);
+              }
+            });
+            const uniqueItems = Array.from(uniqueMap.values());
+
             // 新しい順に並び替えて最新3件を取得
-            allItems.sort((a, b) => b.timestamp - a.timestamp);
-            const topItems = allItems.slice(0, 3);
+            uniqueItems.sort((a, b) => b.timestamp - a.timestamp);
+            const topItems = uniqueItems.slice(0, 3);
 
             const dbUrl = process.env.FIREBASE_DATABASE_URL + "/whatsNew.json?auth=" + process.env.FIREBASE_SECRET_KEY;
             
