@@ -35,53 +35,35 @@ jobs:
           const FEEDS = [
             { type: "note", url: "https://note.com/andydandystory/rss" },
             { type: "yt-repair", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCnN8E4C4uQzY0y1g9N1y1A" },
-            { type: "yt-talk", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UC6iB8Oa-aD20QxG24G-A3Cg" }
+            { type: "yt-talk", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UC6-AwddczjrLZ8VaoW5-_6g" }
           ];
-
-          // YouTubeのハンドル名やユーザー名からチャンネルIDを安全に取得・解析する処理
-          async function getYoutubeEntries(feed) {
-            try {
-              // ユーザーの公開再生リスト（アップロード動画一覧）から取得を試みる
-              let url = "";
-              if (feed.type === "yt-repair") {
-                url = "https://www.youtube.com/feeds/videos.xml?playlist_id=UUMO" + "sato2525jd";
-              } else if (feed.type === "yt-talk") {
-                url = "https://www.youtube.com/feeds/videos.xml?playlist_id=UUMO" + "andydandystory";
-              }
-              
-              const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-              if (!res.ok) return [];
-              const xml = await res.text();
-              const result = await parser.parseStringPromise(xml);
-              
-              if (result && result.feed && result.feed.entry) {
-                const entries = result.feed.entry;
-                return Array.isArray(entries) ? entries : [entries];
-              }
-            } catch (e) {
-              console.error("YouTube fetch failed:", feed.type, e.message);
-            }
-            return [];
-          }
 
           async function main() {
             let allItems = [];
 
-            // 1. noteの取得
-            try {
-              const res = await fetch("https://note.com/andydandystory/rss");
-              if (res.ok) {
+            for (const feed of FEEDS) {
+              try {
+                const res = await fetch(feed.url, {
+                  headers: { "User-Agent": "Mozilla/5.0" }
+                });
+                if (!res.ok) continue;
+                
                 const xml = await res.text();
                 const result = await parser.parseStringPromise(xml);
-                if (result && result.rss && result.rss.channel && result.rss.channel.item) {
-                  const items = Array.isArray(result.rss.channel.item) ? result.rss.channel.item : [result.rss.channel.item];
-                  items.forEach(item => {
+
+                if (feed.type === "note") {
+                  if (!result || !result.rss || !result.rss.channel) continue;
+                  const items = result.rss.channel.item || [];
+                  const itemList = Array.isArray(items) ? items : [items];
+                  
+                  itemList.forEach(item => {
                     let thumb = "";
                     if (item["media:thumbnail"]) {
                       thumb = item["media:thumbnail"];
                     } else if (item["media:content"] && item["media:content"].$) {
                       thumb = item["media:content"].$.url;
                     }
+
                     const pubDate = new Date(item.pubDate);
                     const formattedDate = pubDate.getFullYear() + "/" + 
                       String(pubDate.getMonth() + 1).padStart(2, "0") + "/" + 
@@ -96,47 +78,44 @@ jobs:
                       thumbUrl: thumb
                     });
                   });
+                } else {
+                  // YouTube (Atomフィード) - ライブ配信アーカイブも含む
+                  if (!result || !result.feed || !result.feed.entry) continue;
+                  const entries = result.feed.entry || [];
+                  const entryList = Array.isArray(entries) ? entries : [entries];
+
+                  entryList.forEach(entry => {
+                    let thumb = "";
+                    if (entry["media:group"] && entry["media:group"]["media:thumbnail"]) {
+                      thumb = entry["media:group"]["media:thumbnail"].$.url;
+                    }
+
+                    const pubDate = new Date(entry.published || entry.updated);
+                    const formattedDate = pubDate.getFullYear() + "/" + 
+                      String(pubDate.getMonth() + 1).padStart(2, "0") + "/" + 
+                      String(pubDate.getDate()).padStart(2, "0");
+
+                    allItems.push({
+                      type: feed.type,
+                      title: entry.title,
+                      link: entry.link.$.href,
+                      date: formattedDate,
+                      timestamp: pubDate.getTime(),
+                      thumbUrl: thumb
+                    });
+                  });
                 }
+              } catch (e) {
+                console.error("Error fetching feed:", feed.type, e.message);
               }
-            } catch (e) {
-              console.error("note fetch error:", e.message);
             }
 
-            // 2. YouTube (ジャンク修理 & 雑談) の取得
-            const ytFeeds = [
-              { type: "yt-repair", handle: "sato2525jd" },
-              { type: "yt-talk", handle: "andydandystory" }
-            ];
-
-            for (const yt of ytFeeds) {
-              const entries = await getYoutubeEntries(yt);
-              entries.forEach(entry => {
-                let thumb = "";
-                if (entry["media:group"] && entry["media:group"]["media:thumbnail"]) {
-                  thumb = entry["media:group"]["media:thumbnail"].$.url;
-                }
-                const pubDate = new Date(entry.published || entry.updated);
-                const formattedDate = pubDate.getFullYear() + "/" + 
-                  String(pubDate.getMonth() + 1).padStart(2, "0") + "/" + 
-                  String(pubDate.getDate()).padStart(2, "0");
-
-                allItems.push({
-                  type: yt.type,
-                  title: entry.title,
-                  link: entry.link.$.href,
-                  date: formattedDate,
-                  timestamp: pubDate.getTime(),
-                  thumbUrl: thumb
-                });
-              });
-            }
-
-            // 日付の新しい順にソートして上位3件を抽出
+            // 新しい順に並び替えて最新3件を取得
             allItems.sort((a, b) => b.timestamp - a.timestamp);
             const topItems = allItems.slice(0, 3);
 
-            // Firebase Realtime Database へ保存
             const dbUrl = process.env.FIREBASE_DATABASE_URL + "/whatsNew.json?auth=" + process.env.FIREBASE_SECRET_KEY;
+            
             const putRes = await fetch(dbUrl, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
