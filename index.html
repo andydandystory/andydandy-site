@@ -452,113 +452,133 @@
     counterRef.transaction((currentValue) => {
       return (currentValue || 0) + 1;
     }, (error, committed, snapshot) => {
-      if (snapshot) {
-        document.getElementById('visits').innerText = snapshot.val();
+      if (snapshot && snapshot.exists()) {
+        document.getElementById('visits').textContent = snapshot.val();
       }
     });
 
-    // 2. 読書データのリアルタイム更新
-    const bookRef = database.ref('now/book');
+    // 2. 読書データのリアルタイム更新（now 直下と now/book の両方に対応）
+    const bookRef = database.ref('now');
     bookRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        if (data.readDate) {
-          document.getElementById('book-date').innerText = `🗓 読了日: ${data.readDate}`;
-        } else {
-          document.getElementById('book-date').innerText = "";
-        }
+      const rawData = snapshot.val();
+      if (rawData) {
+        // now/book 階層でも now 直下でも自動判別
+        const data = rawData.book ? rawData.book : rawData;
 
-        const authorStr = data.author ? ` ${data.author}` : "";
-        document.getElementById('book-title').innerText = `『${data.title || "無題"}』${authorStr}`;
-        document.getElementById('book-review').innerText = data.review || "";
-        
-        const coverImg = document.getElementById('book-cover');
-        if (data.coverUrl && data.coverUrl.trim() !== "") {
-          coverImg.src = data.coverUrl;
-          coverImg.style.display = "block";
+        if (data.title || data.review) {
+          if (data.readDate) {
+            document.getElementById('book-date').textContent = `🗓 読了日: ${data.readDate}`;
+          } else {
+            document.getElementById('book-date').textContent = "";
+          }
+
+          const authorStr = data.author ? ` ${data.author}` : "";
+          document.getElementById('book-title').textContent = `『${data.title || "無題"}』${authorStr}`;
+          document.getElementById('book-review').textContent = data.review || "";
+          
+          const coverImg = document.getElementById('book-cover');
+          if (data.coverUrl && typeof data.coverUrl === 'string' && data.coverUrl.trim() !== "") {
+            coverImg.src = data.coverUrl;
+            coverImg.style.display = "block";
+          } else {
+            coverImg.style.display = "none";
+          }
         } else {
-          coverImg.style.display = "none";
+          document.getElementById('book-date').textContent = "";
+          document.getElementById('book-title').textContent = "まだ本が登録されていません";
+          document.getElementById('book-review').textContent = "専用メールに送信するとここに表示されます。";
         }
-      } else {
-        document.getElementById('book-date').innerText = "";
-        document.getElementById('book-title').innerText = "まだ本が登録されていません";
-        document.getElementById('book-review').innerText = "専用メールに送信するとここに表示されます。";
       }
     });
 
-    // 3. 最新のアクティビティ（What's New）のリアルタイム更新（XSS安全対策版）
-const whatsNewRef = database.ref('whatsNew');
-whatsNewRef.on('value', (snapshot) => {
-  const data = snapshot.val();
-  const listContainer = document.getElementById('whats-new-list');
-  
-  if (data && Array.isArray(data) && data.length > 0) {
-    listContainer.textContent = ''; // 初期表示をクリア（innerHTMLを使わない）
-
-    data.forEach(item => {
-      let badgeClass = 'note';
-      let badgeLabel = '📝 note';
-      if (item.type === 'yt-repair') {
-        badgeClass = 'yt-repair';
-        badgeLabel = '🔧 YouTube';
-      } else if (item.type === 'yt-talk') {
-        badgeClass = 'yt-talk';
-        badgeLabel = '💬 YouTube';
+    // 3. 最新のアクティビティ（What's New）のリアルタイム更新（配列・オブジェクト両対応）
+    const whatsNewRef = database.ref('whatsNew');
+    whatsNewRef.on('value', (snapshot) => {
+      const rawData = snapshot.val();
+      const listContainer = document.getElementById('whats-new-list');
+      
+      // 配列・オブジェクトどちらの形式で返ってきても配列化する
+      let data = [];
+      if (rawData) {
+        if (Array.isArray(rawData)) {
+          data = rawData;
+        } else if (typeof rawData === 'object') {
+          data = Object.values(rawData);
+        }
       }
+      
+      if (data.length > 0) {
+        listContainer.textContent = ''; // 初期表示をクリア
 
-      const thumbUrl = item.thumbUrl || 'https://via.placeholder.com/150?text=No+Image';
+        data.forEach(item => {
+          if (!item) return;
 
-      // 1. リスト要素 <li>
-      const li = document.createElement('li');
-      li.className = 'whats-new-item';
+          let badgeClass = 'note';
+          let badgeLabel = '📝 note';
+          if (item.type === 'yt-repair') {
+            badgeClass = 'yt-repair';
+            badgeLabel = '🔧 YouTube';
+          } else if (item.type === 'yt-talk') {
+            badgeClass = 'yt-talk';
+            badgeLabel = '💬 YouTube';
+          }
 
-      // 2. カードリンク <a>
-      const a = document.createElement('a');
-      a.href = item.link || '#';
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.className = 'whats-new-card';
+          const thumbUrl = item.thumbUrl || 'https://via.placeholder.com/150?text=No+Image';
 
-      // 3. サムネイル <img>
-      const img = document.createElement('img');
-      img.src = thumbUrl;
-      img.alt = 'サムネイル';
-      img.className = 'whats-new-thumb';
+          // 1. リスト要素 <li>
+          const li = document.createElement('li');
+          li.className = 'whats-new-item';
 
-      // 4. テキスト領域 <div>
-      const infoDiv = document.createElement('div');
-      infoDiv.className = 'whats-new-info';
+          // 2. カードリンク <a>
+          const a = document.createElement('a');
+          a.href = item.link || '#';
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.className = 'whats-new-card';
 
-      // 5. ヘッダー（バッジ・日付） <div>
-      const headerDiv = document.createElement('div');
-      headerDiv.className = 'whats-new-header';
+          // 3. サムネイル <img>
+          const img = document.createElement('img');
+          img.src = thumbUrl;
+          img.alt = 'サムネイル';
+          img.className = 'whats-new-thumb';
 
-      const badgeSpan = document.createElement('span');
-      badgeSpan.className = `media-badge ${badgeClass}`;
-      badgeSpan.textContent = badgeLabel; // テキストとして安全に挿入
+          // 4. テキスト領域 <div>
+          const infoDiv = document.createElement('div');
+          infoDiv.className = 'whats-new-info';
 
-      const dateSpan = document.createElement('span');
-      dateSpan.className = 'whats-new-date';
-      dateSpan.textContent = item.date || ''; // テキストとして安全に挿入
+          // 5. ヘッダー（バッジ・日付） <div>
+          const headerDiv = document.createElement('div');
+          headerDiv.className = 'whats-new-header';
 
-      headerDiv.appendChild(badgeSpan);
-      headerDiv.appendChild(dateSpan);
+          const badgeSpan = document.createElement('span');
+          badgeSpan.className = `media-badge ${badgeClass}`;
+          badgeSpan.textContent = badgeLabel;
 
-      // 6. タイトル <h3>
-      const titleH3 = document.createElement('h3');
-      titleH3.className = 'whats-new-title';
-      titleH3.textContent = item.title || ''; // テキストとして安全に挿入
+          const dateSpan = document.createElement('span');
+          dateSpan.className = 'whats-new-date';
+          dateSpan.textContent = item.date || '';
 
-      // 7. 構造の組み立て
-      infoDiv.appendChild(headerDiv);
-      infoDiv.appendChild(titleH3);
+          headerDiv.appendChild(badgeSpan);
+          headerDiv.appendChild(dateSpan);
 
-      a.appendChild(img);
-      a.appendChild(infoDiv);
+          // 6. タイトル <h3>
+          const titleH3 = document.createElement('h3');
+          titleH3.className = 'whats-new-title';
+          titleH3.textContent = item.title || '';
 
-      li.appendChild(a);
+          // 7. 構造の組み立て
+          infoDiv.appendChild(headerDiv);
+          infoDiv.appendChild(titleH3);
 
-      listContainer.appendChild(li);
+          a.appendChild(img);
+          a.appendChild(infoDiv);
+
+          li.appendChild(a);
+
+          listContainer.appendChild(li);
+        });
+      }
     });
-  }
-});
+  </script>
+</body>
+</html>
