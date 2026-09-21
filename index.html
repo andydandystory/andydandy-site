@@ -373,7 +373,7 @@
 
     <!-- カウンター文言 -->
     <p class="counter-text">
-      あなたは <strong id="visits" style="font-size: 1.4em; color: #0056b3;">...</strong> 人目のアンディダンディです！
+      あなたは <strong id="visits" style="font-size: 1.4em; color: #0056b3;">100</strong> 人目のアンディダンディです！
     </p>
 
     <!-- キリ番報告の点滅ボックス -->
@@ -447,57 +447,53 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 1. アクセスカウントの更新
-    const counterRef = database.ref('visits');
-    counterRef.transaction((currentValue) => {
-      return (currentValue || 0) + 1;
-    }, (error, committed, snapshot) => {
-      if (snapshot && snapshot.exists()) {
+    // 1. アクセスカウントの取得（エラー時も処理を止めない安全処理）
+    const counterRef = database.ref('now/visits');
+    counterRef.on('value', (snapshot) => {
+      if (snapshot.exists()) {
         document.getElementById('visits').textContent = snapshot.val();
       }
+    }, (error) => {
+      console.log('Visits read error:', error);
     });
 
-    // 2. 読書データのリアルタイム更新（now 直下と now/book の両方に対応）
-    const bookRef = database.ref('now');
+    // 2. 読書データのリアルタイム更新（now/book を直接読み込み）
+    const bookRef = database.ref('now/book');
     bookRef.on('value', (snapshot) => {
-      const rawData = snapshot.val();
-      if (rawData) {
-        // now/book 階層でも now 直下でも自動判別
-        const data = rawData.book ? rawData.book : rawData;
-
-        if (data.title || data.review) {
-          if (data.readDate) {
-            document.getElementById('book-date').textContent = `🗓 読了日: ${data.readDate}`;
-          } else {
-            document.getElementById('book-date').textContent = "";
-          }
-
-          const authorStr = data.author ? ` ${data.author}` : "";
-          document.getElementById('book-title').textContent = `『${data.title || "無題"}』${authorStr}`;
-          document.getElementById('book-review').textContent = data.review || "";
-          
-          const coverImg = document.getElementById('book-cover');
-          if (data.coverUrl && typeof data.coverUrl === 'string' && data.coverUrl.trim() !== "") {
-            coverImg.src = data.coverUrl;
-            coverImg.style.display = "block";
-          } else {
-            coverImg.style.display = "none";
-          }
+      const data = snapshot.val();
+      if (data) {
+        if (data.readDate) {
+          document.getElementById('book-date').textContent = `🗓 読了日: ${data.readDate}`;
         } else {
           document.getElementById('book-date').textContent = "";
-          document.getElementById('book-title').textContent = "まだ本が登録されていません";
-          document.getElementById('book-review').textContent = "専用メールに送信するとここに表示されます。";
         }
+
+        const authorStr = data.author ? ` (${data.author})` : "";
+        document.getElementById('book-title').textContent = `『${data.title || "無題"}』${authorStr}`;
+        document.getElementById('book-review').textContent = data.review || "";
+        
+        const coverImg = document.getElementById('book-cover');
+        if (data.coverUrl && typeof data.coverUrl === 'string' && data.coverUrl.trim() !== "") {
+          coverImg.src = data.coverUrl;
+          coverImg.style.display = "block";
+        } else {
+          coverImg.style.display = "none";
+        }
+      } else {
+        document.getElementById('book-date').textContent = "";
+        document.getElementById('book-title').textContent = "まだ本が登録されていません";
+        document.getElementById('book-review').textContent = "専用メールに送信するとここに表示されます。";
       }
+    }, (error) => {
+      console.error('Book read error:', error);
     });
 
-    // 3. 最新のアクティビティ（What's New）のリアルタイム更新（配列・オブジェクト両対応）
+    // 3. 最新のアクティビティ（What's New）のリアルタイム更新
     const whatsNewRef = database.ref('whatsNew');
     whatsNewRef.on('value', (snapshot) => {
       const rawData = snapshot.val();
       const listContainer = document.getElementById('whats-new-list');
       
-      // 配列・オブジェクトどちらの形式で返ってきても配列化する
       let data = [];
       if (rawData) {
         if (Array.isArray(rawData)) {
@@ -507,12 +503,13 @@
         }
       }
       
-      if (data.length > 0) {
+      // 空データ・不完全データを除外
+      const validItems = data.filter(item => item && item.title);
+
+      if (validItems.length > 0) {
         listContainer.textContent = ''; // 初期表示をクリア
 
-        data.forEach(item => {
-          if (!item) return;
-
+        validItems.forEach(item => {
           let badgeClass = 'note';
           let badgeLabel = '📝 note';
           if (item.type === 'yt-repair') {
@@ -525,28 +522,23 @@
 
           const thumbUrl = item.thumbUrl || 'https://via.placeholder.com/150?text=No+Image';
 
-          // 1. リスト要素 <li>
           const li = document.createElement('li');
           li.className = 'whats-new-item';
 
-          // 2. カードリンク <a>
           const a = document.createElement('a');
           a.href = item.link || '#';
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
           a.className = 'whats-new-card';
 
-          // 3. サムネイル <img>
           const img = document.createElement('img');
           img.src = thumbUrl;
           img.alt = 'サムネイル';
           img.className = 'whats-new-thumb';
 
-          // 4. テキスト領域 <div>
           const infoDiv = document.createElement('div');
           infoDiv.className = 'whats-new-info';
 
-          // 5. ヘッダー（バッジ・日付） <div>
           const headerDiv = document.createElement('div');
           headerDiv.className = 'whats-new-header';
 
@@ -561,12 +553,10 @@
           headerDiv.appendChild(badgeSpan);
           headerDiv.appendChild(dateSpan);
 
-          // 6. タイトル <h3>
           const titleH3 = document.createElement('h3');
           titleH3.className = 'whats-new-title';
           titleH3.textContent = item.title || '';
 
-          // 7. 構造の組み立て
           infoDiv.appendChild(headerDiv);
           infoDiv.appendChild(titleH3);
 
@@ -578,6 +568,8 @@
           listContainer.appendChild(li);
         });
       }
+    }, (error) => {
+      console.error('WhatsNew read error:', error);
     });
   </script>
 </body>
