@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>本棚 - あんどうだいすけ の ザ・ホームページ</title>
+  <style>
+    /* トップページのレトロモダンデザインと完全統一 */
+    body {
+      background-color: #f7f7f7;
+      color: #333;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* ヘッダーエリア */
+    .header-card {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 30px 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      margin-bottom: 25px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin: 0 0 10px 0;
+      font-weight: bold;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    /* トップページへ戻るボタン */
+    .nav-btn {
+      display: inline-block;
+      text-decoration: none;
+      color: #444;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+    }
+
+    .nav-btn:hover {
+      background-color: #e2e2e2;
+    }
+
+    /* セクションタイトル（トップページの「最近読み終わった本」と同じトーン） */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #333;
+    }
+
+    /* 本棚一覧 */
+    .book-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    /* カードデザイン（トップページのカードと完全同一） */
+    .book-card {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .book-cover {
+      width: 90px;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #eee;
+      flex-shrink: 0;
+    }
+
+    .book-info {
+      flex: 1;
+    }
+
+    .book-date {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .book-title {
+      font-size: 1.05rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #111;
+    }
+
+    .book-author {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    .book-review {
+      font-size: 0.9rem;
+      color: #444;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status-msg {
+      text-align: center;
+      padding: 30px;
+      color: #888;
+      background-color: #fff;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header class="header-card">
+      <h1>あんどうだいすけ</h1>
+      <div class="subtitle">の<br><strong style="font-size: 1.4rem;">ザ・読んだ本たち</strong></div>
+      <a href="index.html" class="nav-btn">← トップページへ戻る</a>
+    </header>
+
+  <div class="section-title">📚 読了記録アーカイブ</div>
+
+    <main>
+      <div id="book-list" class="book-list">
+        <div class="status-msg">読書ログを読み込み中...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const FIREBASE_DB_URL = "https://andydandy-counter-default-rtdb.firebaseio.com/books.json";
+
+    async function fetchBooks() {
+      const listContainer = document.getElementById('book-list');
+
+      try {
+        const response = await fetch(FIREBASE_DB_URL);
+        const data = await response.json();
+
+        if (!data) {
+          listContainer.innerHTML = '<div class="status-msg">まだ読書ログがありません。</div>';
+          return;
+        }
+
+        const booksArray = Object.keys(data).map(key => data[key]);
+
+        // 読了日（readDate）の新しい順（降順）にソート
+        booksArray.sort((a, b) => {
+          const dateA = a.readDate || "0000-00-00";
+          const dateB = b.readDate || "0000-00-00";
+          return dateB.localeCompare(dateA);
+        });
+
+        listContainer.innerHTML = "";
+        booksArray.forEach(book => {
+          const card = document.createElement('div');
+          card.className = 'book-card';
+
+          let imageHtml = "";
+          if (book.coverUrl && book.coverUrl.trim() !== "") {
+            imageHtml = `<img src="${book.coverUrl}" alt="表紙" class="book-cover" onerror="this.style.display='none'">`;
+          }
+
+          const dateDisplay = book.readDate ? `🗓 読了日: ${book.readDate}` : "";
+
+          card.innerHTML = `
+            ${imageHtml}
+            <div class="book-info">
+              <div class="book-date">${dateDisplay}</div>
+              <div class="book-title">『${book.title || 'タイトル不明'}』 ${book.author || ''}</div>
+              <div class="book-review">${book.review || ''}</div>
+            </div>
+          `;
+
+          listContainer.appendChild(card);
+        });
+
+      } catch (error) {
+        console.error("データ取得エラー:", error);
+        listContainer.innerHTML = '<div class="status-msg">データの読み込みに失敗しました。</div>';
+      }
+    }
+
+    fetchBooks();
+  </script>
+
+</body>
+</html>

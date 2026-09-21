@@ -2,32 +2,124 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- スマホの画面サイズに自動で綺麗に合わせるおまじない（必須） -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>andydandy's site</title>
   <style>
-    /* 全体のアウトライン（PCで広がりすぎないように中央寄せ） */
+    /* 全体のアウトライン */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       line-height: 1.6;
       color: #333;
-      max-width: 600px; /* PCでの最大幅 */
-      margin: 0 auto;   /* 中央寄せ */
-      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 85px 20px 20px 20px;
       background-color: #f9f9f9;
     }
-    
-    /* ヘッダーカード（四角枠＆センタリング） */
+
+    /* -------------------------------------------------- */
+    /* ダサクール浮遊バーナー（画面最上部に固定） */
+    /* -------------------------------------------------- */
+    .sticky-nav-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(5px);
+      border-bottom: 2px solid #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .sticky-nav {
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      overflow-x: auto; /* スマホでは横スクロール */
+      white-space: nowrap;
+      padding: 10px 15px;
+      gap: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* PCなど画面が十分広い場合は横スクロールを解除してフィットさせる */
+    @media (min-width: 640px) {
+      .sticky-nav {
+        overflow-x: visible;
+        justify-content: space-between; /* 均等に配置 */
+        padding: 10px 5px;
+      }
+      .nav-label {
+        display: none; /* PC表示では「LINK ➔」を非表示にしてスッキリ */
+      }
+    }
+
+    .sticky-nav::-webkit-scrollbar {
+      height: 4px;
+    }
+    .sticky-nav::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    .sticky-nav::-webkit-scrollbar-thumb {
+      background: #bbb;
+      border-radius: 2px;
+    }
+
+    .nav-label {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #888;
+      background: #e8e8e8;
+      padding: 3px 6px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #333;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px 8px;
+      border-radius: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .nav-btn:hover {
+      background: #0056b3;
+      color: #fff;
+      border-color: #0056b3;
+      transform: translateY(-2px);
+    }
+
+    .nav-btn.note:hover { background: #2cb696; border-color: #2cb696; }
+    .nav-btn.yt-repair:hover { background: #e62117; border-color: #e62117; }
+    .nav-btn.yt-talk:hover { background: #ff6600; border-color: #ff6600; }
+    .nav-btn.x:hover { background: #000; border-color: #000; }
+    .nav-btn.insta:hover { background: #e1306c; border-color: #e1306c; }
+    .nav-btn.fb:hover { background: #1877f2; border-color: #1877f2; }
+
+    /* -------------------------------------------------- */
+    /* ヘッダーカード＆チカチカアニメーション */
+    /* -------------------------------------------------- */
     .header-card {
       background: #fff;
       padding: 30px 20px;
       border-radius: 8px;
-      text-align: center; /* 中身をすべて中央揃え */
+      text-align: center;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       margin-bottom: 30px;
     }
 
-    /* レトロカッコいい3行タイトル */
     .main-title-container {
       display: flex;
       justify-content: center;
@@ -40,30 +132,41 @@
       line-height: 1.5;
       color: #111;
       width: 100%;
-      max-width: 280px; /* タイトル幅を制限して位置を固定 */
+      max-width: 280px;
     }
 
-    .line-1 {
-      display: block;
-      text-align: left;
-    }
-
-    .line-2 {
-      display: block;
-      text-align: center;
-      font-size: 0.85em;
-      color: #666;
-    }
-
-    .line-3 {
-      display: block;
-      text-align: right;
-    }
+    .line-1 { display: block; text-align: left; }
+    .line-2 { display: block; text-align: center; font-size: 0.85em; color: #666; }
+    .line-3 { display: block; text-align: right; }
 
     .counter-text {
       font-size: 1.1em;
       margin: 10px 0;
       color: #444;
+    }
+
+    /* レトロなチカチカ（点滅）アニメーションの定義 */
+    @keyframes retro-blink {
+      0%, 100% {
+        opacity: 1;
+        border-color: #f0a000;
+        background-color: #fff9e6;
+      }
+      50% {
+        opacity: 0.5;
+        border-color: #ff3300;
+        background-color: #fff0f0;
+      }
+    }
+
+    /* キリ番告知ボックス（チカチカ適用） */
+    .kiriban-box {
+      border: 1px dashed #f0a000;
+      padding: 10px 12px;
+      margin: 15px 0 12px 0;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      animation: retro-blink 1.5s infinite; /* 1.5秒周期で無限点滅 */
     }
 
     .subtitle-text {
@@ -72,12 +175,13 @@
       margin: 8px 0 0 0;
     }
 
-    /* 読書コーナーの配置（画面幅に合わせて柔軟に変形） */
+    /* -------------------------------------------------- */
+    /* 読書コーナー */
+    /* -------------------------------------------------- */
     .book-container {
       display: flex;
-      flex-wrap: wrap; /* 画面が狭くなったら自動で下段に折り返す */
-      gap: 15px;
-      align-items: flex-start;
+      flex-direction: column;
+      align-items: center;
       background: #fff;
       padding: 15px;
       border-radius: 8px;
@@ -94,7 +198,14 @@
 
     .book-info {
       flex: 1;
-      min-width: 200px; /* 文字エリアが狭くなりすぎないように維持 */
+      min-width: 200px;
+    }
+
+    .book-date {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 4px;
+      font-weight: 500;
     }
 
     .book-title {
@@ -109,9 +220,49 @@
       font-size: 0.95em;
       white-space: pre-wrap;
     }
+
+    .library-btn-wrapper {
+      width: 100%;
+      text-align: center;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px dashed #f0f0f0;
+    }
+
+    .library-btn {
+      display: inline-block;
+      text-decoration: none;
+      color: #444;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .library-btn:hover {
+      background-color: #f0f0f0;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
+
+  <!-- 最上部固定：ダサクール SNSバーナー -->
+  <div class="sticky-nav-container">
+    <nav class="sticky-nav">
+      <span class="nav-label">LINK ➔</span>
+      <a href="https://note.com/andydandystory" target="_blank" class="nav-btn note">📝 note</a>
+      <a href="https://youtube.com/user/sato2525jd" target="_blank" class="nav-btn yt-repair">🔧 YouTube(ジャンク修理)</a>
+      <a href="https://youtube.com/@andydandystory/streams" target="_blank" class="nav-btn yt-talk">💬 YouTube(雑談)</a>
+      <a href="https://x.com/sato2525jd" target="_blank" class="nav-btn x">𝕏 X</a>
+      <a href="https://instagram.com/andydandystory" target="_blank" class="nav-btn insta">📸 Instagram</a>
+      <a href="https://facebook.com/daisuke.ando.3760" target="_blank" class="nav-btn fb">👤 Facebook</a>
+    </nav>
+  </div>
 
   <!-- ヘッダーカード領域 -->
   <div class="header-card">
@@ -122,9 +273,20 @@
         <span class="line-3">ザ・ホームページ</span>
       </h1>
     </div>
+
+    <!-- カウンター文言 -->
     <p class="counter-text">
-      あなたは <strong id="visits" style="font-size: 1.3em; color: #0056b3;">...</strong> 人目の訪問者です！
+      あなたは <strong id="visits" style="font-size: 1.4em; color: #0056b3;">...</strong> 人目のアンディダンディです！
     </p>
+
+    <!-- キリ番報告の点滅ボックス -->
+    <div class="kiriban-box">
+      <p style="margin: 0; font-weight: bold; color: #d9534f;">＼ キリ番ゲット報告求む！ ／</p>
+      <p style="margin: 4px 0 0 0; color: #444;">
+        踏み逃げは御法度☝️ キリ番写真は <strong>各種SNS（現代のBBS）</strong> で投稿して自慢しちゃおう！
+      </p>
+    </div>
+
     <p class="subtitle-text">現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
   </div>
 
@@ -133,13 +295,20 @@
     <h2 style="font-size: 1.2em; color: #333; margin-bottom: 12px;">📖 最近読み終わった本</h2>
     
     <div class="book-container">
-      <!-- 表紙画像 -->
-      <img id="book-cover" src="" alt="表紙画像" class="book-cover" style="display: none;">
+      <div style="display: flex; gap: 15px; width: 100%; align-items: flex-start;">
+        <img id="book-cover" src="" alt="表紙画像" class="book-cover" style="display: none;">
+        
+        <div class="book-info">
+          <div id="book-date" class="book-date"></div>
+          <h3 id="book-title" class="book-title">読み込み中...</h3>
+          <p id="book-review" class="book-review">情報を取得しています...</p>
+        </div>
+      </div>
       
-      <!-- 本の情報と感想 -->
-      <div class="book-info">
-        <h3 id="book-title" class="book-title">読み込み中...</h3>
-        <p id="book-review" class="book-review">情報を取得しています...</p>
+      <div class="library-btn-wrapper">
+        <a href="library.html" class="library-btn">
+          📚 今まで読んだ本たちを見る →
+        </a>
       </div>
     </div>
   </section>
@@ -178,6 +347,12 @@
     bookRef.on('value', (snapshot) => {
       const data = snapshot.val();
       if (data) {
+        if (data.readDate) {
+          document.getElementById('book-date').innerText = `🗓 読了日: ${data.readDate}`;
+        } else {
+          document.getElementById('book-date').innerText = "";
+        }
+
         const authorStr = data.author ? ` ${data.author}` : "";
         document.getElementById('book-title').innerText = `『${data.title || "無題"}』${authorStr}`;
         document.getElementById('book-review').innerText = data.review || "";
@@ -190,6 +365,7 @@
           coverImg.style.display = "none";
         }
       } else {
+        document.getElementById('book-date').innerText = "";
         document.getElementById('book-title').innerText = "まだ本が登録されていません";
         document.getElementById('book-review').innerText = "専用メールに送信するとここに表示されます。";
       }
