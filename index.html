@@ -447,14 +447,14 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 1. アクセスカウントの取得（エラー時も処理を止めない安全処理）
-    const counterRef = database.ref('now/visits');
-    counterRef.on('value', (snapshot) => {
-      if (snapshot.exists()) {
+   // 1. アクセスカウントの自動加算・表示（設定したセキュリティルールに対応）
+    const counterRef = database.ref('visits');
+    counterRef.transaction((currentValue) => {
+      return (currentValue || 0) + 1;
+    }, (error, committed, snapshot) => {
+      if (snapshot && snapshot.exists()) {
         document.getElementById('visits').textContent = snapshot.val();
       }
-    }, (error) => {
-      console.log('Visits read error:', error);
     });
 
     // 2. 読書データのリアルタイム更新（now/book を直接読み込み）
