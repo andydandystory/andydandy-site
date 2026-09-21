@@ -486,46 +486,79 @@
       }
     });
 
-    // 3. 最新のアクティビティ（What's New）のリアルタイム更新
-    const whatsNewRef = database.ref('whatsNew');
-    whatsNewRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      const listContainer = document.getElementById('whats-new-list');
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        listContainer.innerHTML = ''; // 初期表示を消去
+    // 3. 最新のアクティビティ（What's New）のリアルタイム更新（XSS安全対策版）
+const whatsNewRef = database.ref('whatsNew');
+whatsNewRef.on('value', (snapshot) => {
+  const data = snapshot.val();
+  const listContainer = document.getElementById('whats-new-list');
+  
+  if (data && Array.isArray(data) && data.length > 0) {
+    listContainer.textContent = ''; // 初期表示をクリア（innerHTMLを使わない）
 
-        data.forEach(item => {
-          let badgeClass = 'note';
-          let badgeLabel = '📝 note';
-          if (item.type === 'yt-repair') {
-            badgeClass = 'yt-repair';
-            badgeLabel = '🔧 YouTube';
-          } else if (item.type === 'yt-talk') {
-            badgeClass = 'yt-talk';
-            badgeLabel = '💬 YouTube';
-          }
-
-          const thumbUrl = item.thumbUrl || 'https://via.placeholder.com/150?text=No+Image';
-
-          const li = document.createElement('li');
-          li.className = 'whats-new-item';
-          li.innerHTML = `
-            <a href="${item.link}" target="_blank" class="whats-new-card">
-              <img src="${thumbUrl}" alt="サムネイル" class="whats-new-thumb">
-              <div class="whats-new-info">
-                <div class="whats-new-header">
-                  <span class="media-badge ${badgeClass}">${badgeLabel}</span>
-                  <span class="whats-new-date">${item.date}</span>
-                </div>
-                <h3 class="whats-new-title">${item.title}</h3>
-              </div>
-            </a>
-          `;
-          listContainer.appendChild(li);
-        });
+    data.forEach(item => {
+      let badgeClass = 'note';
+      let badgeLabel = '📝 note';
+      if (item.type === 'yt-repair') {
+        badgeClass = 'yt-repair';
+        badgeLabel = '🔧 YouTube';
+      } else if (item.type === 'yt-talk') {
+        badgeClass = 'yt-talk';
+        badgeLabel = '💬 YouTube';
       }
+
+      const thumbUrl = item.thumbUrl || 'https://via.placeholder.com/150?text=No+Image';
+
+      // 1. リスト要素 <li>
+      const li = document.createElement('li');
+      li.className = 'whats-new-item';
+
+      // 2. カードリンク <a>
+      const a = document.createElement('a');
+      a.href = item.link || '#';
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.className = 'whats-new-card';
+
+      // 3. サムネイル <img>
+      const img = document.createElement('img');
+      img.src = thumbUrl;
+      img.alt = 'サムネイル';
+      img.className = 'whats-new-thumb';
+
+      // 4. テキスト領域 <div>
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'whats-new-info';
+
+      // 5. ヘッダー（バッジ・日付） <div>
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'whats-new-header';
+
+      const badgeSpan = document.createElement('span');
+      badgeSpan.className = `media-badge ${badgeClass}`;
+      badgeSpan.textContent = badgeLabel; // テキストとして安全に挿入
+
+      const dateSpan = document.createElement('span');
+      dateSpan.className = 'whats-new-date';
+      dateSpan.textContent = item.date || ''; // テキストとして安全に挿入
+
+      headerDiv.appendChild(badgeSpan);
+      headerDiv.appendChild(dateSpan);
+
+      // 6. タイトル <h3>
+      const titleH3 = document.createElement('h3');
+      titleH3.className = 'whats-new-title';
+      titleH3.textContent = item.title || ''; // テキストとして安全に挿入
+
+      // 7. 構造の組み立て
+      infoDiv.appendChild(headerDiv);
+      infoDiv.appendChild(titleH3);
+
+      a.appendChild(img);
+      a.appendChild(infoDiv);
+
+      li.appendChild(a);
+
+      listContainer.appendChild(li);
     });
-  </script>
-</body>
-</html>
+  }
+});
