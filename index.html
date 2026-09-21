@@ -186,6 +186,7 @@
       padding: 15px;
       border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
     }
 
     .book-cover {
@@ -246,6 +247,102 @@
     .library-btn:hover {
       background-color: #f0f0f0;
       transform: translateY(-1px);
+    }
+
+    /* -------------------------------------------------- */
+    /* 最新のアクティビティ（What's New） - サムネイル付き */
+    /* -------------------------------------------------- */
+    .whats-new-container {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    .whats-new-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .whats-new-item {
+      padding: 12px 0;
+      border-bottom: 1px dashed #eee;
+    }
+
+    .whats-new-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .whats-new-item:first-child {
+      padding-top: 0;
+    }
+
+    .whats-new-card {
+      display: flex;
+      gap: 12px;
+      text-decoration: none;
+      color: #333;
+      align-items: center;
+    }
+
+    .whats-new-card:hover .whats-new-title {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    .whats-new-thumb {
+      width: 70px;
+      height: 70px;
+      border-radius: 6px;
+      object-fit: cover;
+      background-color: #eee;
+      flex-shrink: 0;
+    }
+
+    .whats-new-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .whats-new-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .media-badge {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .media-badge.note { background-color: #2cb696; }
+    .media-badge.yt-repair { background-color: #e62117; }
+    .media-badge.yt-talk { background-color: #ff6600; }
+
+    .whats-new-date {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .whats-new-title {
+      font-size: 0.88rem;
+      font-weight: bold;
+      margin: 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -313,6 +410,24 @@
     </div>
   </section>
 
+  <!-- 最新のアクティビティ（What's New） -->
+  <section>
+    <h2 style="font-size: 1.2em; color: #333; margin-bottom: 12px;">🆕 最新のアクティビティ</h2>
+    
+    <div class="whats-new-container">
+      <ul id="whats-new-list" class="whats-new-list">
+        <!-- 初回読み込み中のダミー表示 -->
+        <li class="whats-new-item">
+          <div class="whats-new-card">
+            <div class="whats-new-info">
+              <h3 class="whats-new-title" style="color: #888;">最新情報を読み込んでいます...</h3>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
   <!-- Firebase SDK の読み込み -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -368,6 +483,47 @@
         document.getElementById('book-date').innerText = "";
         document.getElementById('book-title').innerText = "まだ本が登録されていません";
         document.getElementById('book-review').innerText = "専用メールに送信するとここに表示されます。";
+      }
+    });
+
+    // 3. 最新のアクティビティ（What's New）のリアルタイム更新
+    const whatsNewRef = database.ref('whatsNew');
+    whatsNewRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      const listContainer = document.getElementById('whats-new-list');
+      
+      if (data && Array.isArray(data) && data.length > 0) {
+        listContainer.innerHTML = ''; // 初期表示を消去
+
+        data.forEach(item => {
+          let badgeClass = 'note';
+          let badgeLabel = '📝 note';
+          if (item.type === 'yt-repair') {
+            badgeClass = 'yt-repair';
+            badgeLabel = '🔧 YouTube';
+          } else if (item.type === 'yt-talk') {
+            badgeClass = 'yt-talk';
+            badgeLabel = '💬 YouTube';
+          }
+
+          const thumbUrl = item.thumbUrl || 'https://via.placeholder.com/150?text=No+Image';
+
+          const li = document.createElement('li');
+          li.className = 'whats-new-item';
+          li.innerHTML = `
+            <a href="${item.link}" target="_blank" class="whats-new-card">
+              <img src="${thumbUrl}" alt="サムネイル" class="whats-new-thumb">
+              <div class="whats-new-info">
+                <div class="whats-new-header">
+                  <span class="media-badge ${badgeClass}">${badgeLabel}</span>
+                  <span class="whats-new-date">${item.date}</span>
+                </div>
+                <h3 class="whats-new-title">${item.title}</h3>
+              </div>
+            </a>
+          `;
+          listContainer.appendChild(li);
+        });
       }
     });
   </script>

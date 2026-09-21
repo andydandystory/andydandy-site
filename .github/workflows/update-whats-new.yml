@@ -1,0 +1,133 @@
+name: Update What's New Feed
+
+on:
+  schedule:
+    # 毎時0分に自動実行
+    - cron: '0 * * * *'
+  # GitHubの画面から手動で即時実行できるボタンも有効化
+  workflow_dispatch:
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install xml2js node-fetch@2
+
+      - name: Fetch RSS and Update Firebase
+        env:
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          FIREBASE_SECRET_KEY: ${{ secrets.FIREBASE_SECRET_KEY }}
+        run: |
+          node -e '
+          const fetch = require("node-fetch");
+          const xml2js = require("xml2js");
+
+          const parser = new xml2js.Parser({ explicitArray: false });
+
+          // 巡回するRSSフィード一覧
+          const FEEDS = [
+            { type: "note", url: "https://note.com/andydandystory/rss" },
+            { type: "yt-repair", url: "https://www.youtube.com/feeds/videos.xml?user=sato2525jd" },
+            { type: "yt-talk", url: "https://www.youtube.com/feeds/videos.xml?playlist_id=UUMOandydandystory" }
+          ];
+
+          async function main() {
+            let allItems = [];
+
+            for (const feed of FEEDS) {
+              try {
+                const res = await fetch(feed.url);
+                const xml = await res.text();
+                const result = await parser.parseStringPromise(xml);
+
+                if (feed.type === "note") {
+                  const items = result.rss.channel.item || [];
+                  const itemList = Array.isArray(items) ? items : [items];
+                  
+                  itemList.forEach(item => {
+                    // noteの見出し画像取得
+                    let thumb = "";
+                    if (item["media:thumbnail"]) {
+                      thumb = item["media:thumbnail"];
+                    } else if (item["media:content"] && item["media:content"].$) {
+                      thumb = item["media:content"].$.url;
+                    }
+
+                    const pubDate = new Date(item.pubDate);
+                    const formattedDate = pubDate.getFullYear() + "/" + 
+                      String(pubDate.getMonth() + 1).padStart(2, "0") + "/" + 
+                      String(pubDate.getDate()).padStart(2, "0");
+
+                    allItems.push({
+                      type: "note",
+                      title: item.title,
+                      link: item.link,
+                      date: formattedDate,
+                      timestamp: pubDate.getTime(),
+                      thumbUrl: thumb
+                    });
+                  });
+                } else {
+                  // YouTube (Atomフィード)
+                  const entries = result.feed.entry || [];
+                  const entryList = Array.isArray(entries) ? entries : [entries];
+
+                  entryList.forEach(entry => {
+                    let thumb = "";
+                    if (entry["media:group"] && entry["media:group"]["media:thumbnail"]) {
+                      thumb = entry["media:group"]["media:thumbnail"].$.url;
+                    }
+
+                    const pubDate = new Date(entry.published || entry.updated);
+                    const formattedDate = pubDate.getFullYear() + "/" + 
+                      String(pubDate.getMonth() + 1).padStart(2, "0") + "/" + 
+                      String(pubDate.getDate()).padStart(2, "0");
+
+                    allItems.push({
+                      type: feed.type,
+                      title: entry.title,
+                      link: entry.link.$.href,
+                      date: formattedDate,
+                      timestamp: pubDate.getTime(),
+                      thumbUrl: thumb
+                    });
+                  });
+                }
+              } catch (e) {
+                console.error("Error fetching feed:", feed.type, e);
+              }
+            }
+
+            // 新しい順（タイムスタンプ降順）にソート
+            allItems.sort((a, b) => b.timestamp - a.timestamp);
+
+            // 上位3件を抽出
+            const topItems = allItems.slice(0, 3);
+
+            // Firebase Realtime Database へ書き込み
+            const dbUrl = process.env.FIREBASE_DATABASE_URL + "/whatsNew.json?auth=" + process.env.FIREBASE_SECRET_KEY;
+            
+            const putRes = await fetch(dbUrl, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(topItems)
+            });
+
+            if (putRes.ok) {
+              console.log("Successfully updated whatsNew on Firebase!");
+            } else {
+              console.error("Firebase update failed:", await putRes.text());
+            }
+          }
+
+          main();
+          '
