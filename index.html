@@ -457,35 +457,93 @@
       }
     });
 
-    // 2. 読書データのリアルタイム更新（now/book を直接読み込み）
-    const bookRef = database.ref('now/book');
-    bookRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        if (data.readDate) {
-          document.getElementById('book-date').textContent = `🗓 読了日: ${data.readDate}`;
-        } else {
-          document.getElementById('book-date').textContent = "";
-        }
+     // 2. 読書データのリアルタイム更新（libraryから最新の本を取得）
+    const libraryRef = database.ref('library');
 
-        const authorStr = data.author ? ` (${data.author})` : "";
-        document.getElementById('book-title').textContent = `『${data.title || "無題"}』${authorStr}`;
-        document.getElementById('book-review').textContent = data.review || "";
-        
-        const coverImg = document.getElementById('book-cover');
-        if (data.coverUrl && typeof data.coverUrl === 'string' && data.coverUrl.trim() !== "") {
-          coverImg.src = data.coverUrl;
-          coverImg.style.display = "block";
-        } else {
-          coverImg.style.display = "none";
-        }
-      } else {
+    libraryRef.on('value', (snapshot) => {
+      const rawData = snapshot.val();
+
+      if (!rawData) {
         document.getElementById('book-date').textContent = "";
         document.getElementById('book-title').textContent = "まだ本が登録されていません";
         document.getElementById('book-review').textContent = "専用メールに送信するとここに表示されます。";
+        document.getElementById('book-cover').style.display = "none";
+        return;
       }
+
+      // libraryの各本を配列化
+      const books = Array.isArray(rawData)
+        ? rawData
+        : Object.values(rawData);
+
+      // 読了日が設定されている本だけを対象にする
+      const validBooks = books.filter(book =>
+        book &&
+        book.title &&
+        book.readDate
+      );
+
+      if (validBooks.length === 0) {
+        document.getElementById('book-date').textContent = "";
+        document.getElementById('book-title').textContent = "まだ本が登録されていません";
+        document.getElementById('book-review').textContent = "専用メールに送信するとここに表示されます。";
+        document.getElementById('book-cover').style.display = "none";
+        return;
+      }
+
+      // readDateが最も新しい本を取得
+      // 同じ読了日の場合はupdatedAtが新しいものを優先
+      validBooks.sort((a, b) => {
+        const dateCompare = String(b.readDate).localeCompare(String(a.readDate));
+
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+
+        return String(b.updatedAt || "").localeCompare(
+          String(a.updatedAt || "")
+        );
+      });
+
+      const data = validBooks[0];
+
+      // 読了日
+      if (data.readDate) {
+        document.getElementById('book-date').textContent =
+          `🗓 読了日: ${data.readDate}`;
+      } else {
+        document.getElementById('book-date').textContent = "";
+      }
+
+      // タイトル・著者
+      const authorStr = data.author ? ` (${data.author})` : "";
+      document.getElementById('book-title').textContent =
+        `『${data.title || "無題"}』${authorStr}`;
+
+      // 感想
+      document.getElementById('book-review').textContent =
+        data.review || "";
+
+      // 表紙
+      const coverImg = document.getElementById('book-cover');
+
+      if (
+        data.coverUrl &&
+        typeof data.coverUrl === 'string' &&
+        data.coverUrl.trim() !== ""
+      ) {
+        coverImg.src = data.coverUrl;
+        coverImg.style.display = "block";
+      } else {
+        coverImg.style.display = "none";
+      }
+
     }, (error) => {
-      console.error('Book read error:', error);
+      console.error('Library read error:', error);
+      document.getElementById('book-title').textContent =
+        "読書データを取得できませんでした";
+      document.getElementById('book-review').textContent =
+        "しばらくしてから再度お試しください。";
     });
 
     // 3. 最新のアクティビティ（What's New）のリアルタイム更新
