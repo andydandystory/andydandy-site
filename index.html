@@ -176,6 +176,53 @@
     }
 
     /* -------------------------------------------------- */
+    /* ゴミの日お天気占い（クラス名は全て gomi- 接頭辞で衝突回避） */
+    /* -------------------------------------------------- */
+    .gomi-container {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .gomi-intro { text-align:center; color:#666; line-height:1.8; font-size:0.9em; }
+    .gomi-intro strong { color:#333; }
+    .gomi-notice { margin-top:12px; padding:11px 13px; border-radius:10px; background:#fbf7ed; border:1px solid #ecdfb8; font-size:0.75rem; line-height:1.8; color:#6b5f3d; }
+    .gomi-datasrc { margin-top:8px; padding:9px 12px; border-radius:10px; background:#eef4fb; border:1px solid #cddceb; font-size:0.7rem; line-height:1.7; color:#345; }
+    .gomi-datasrc.err { background:#fbeeee; border-color:#e6c8c8; color:#6b3c3c; }
+    .gomi-form-area { margin-top:14px; padding:16px 14px 14px; border:1px solid #e5e5e5; border-radius:11px; background:#fafafa; transition:max-height .45s ease,opacity .35s ease,padding .45s ease,margin .45s ease; max-height:600px; overflow:hidden; }
+    .gomi-form-area.closed { max-height:0; opacity:0; padding-top:0; padding-bottom:0; margin-top:0; border-width:0; }
+    .gomi-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .gomi-form-grid label { display:block; font-size:0.72rem; color:#777; margin-bottom:4px; }
+    .gomi-form-grid select { width:100%; padding:9px; border:1px solid #ccc; border-radius:8px; background:#fff; font:inherit; font-size:0.9em; }
+    .gomi-form-grid select:disabled { opacity:.5; }
+    .gomi-start { margin-top:12px; text-align:center; }
+    .gomi-btn { border:0; border-radius:999px; padding:9px 16px; background:#333; color:#fff; font:inherit; font-weight:bold; font-size:0.85em; cursor:pointer; }
+    .gomi-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .gomi-btn-secondary { background:#fff; color:#555; border:1px solid #ccc; padding:7px 13px; border-radius:999px; font:inherit; font-size:0.8em; font-weight:bold; cursor:pointer; }
+    .gomi-result-area { max-height:0; opacity:0; overflow:hidden; transition:max-height .55s ease,opacity .45s ease,margin .45s ease; margin-top:0; }
+    .gomi-result-area.open { max-height:800px; opacity:1; margin-top:14px; }
+    .gomi-date-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 13px; background:#fafafa; border:1px solid #e8e8e8; border-radius:10px; font-size:0.85em; }
+    .gomi-date { font-size:1.1em; font-weight:800; color:#222; }
+    .gomi-heading { text-align:center; font-size:1em; font-weight:800; margin:14px 0; }
+    .gomi-heading:before, .gomi-heading:after { content:"✨"; font-size:0.7em; margin:0 6px; }
+    .gomi-results { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .gomi-result { min-height:140px; border:1px solid #e5e5e5; border-radius:12px; padding:14px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+    .gomi-result.garbage { background:#fffaf6; border-color:#f0d8c5; }
+    .gomi-result.weather { background:#f7fbff; border-color:#d7e6f4; }
+    .gomi-result .gomi-label { font-size:0.8em; color:#666; font-weight:bold; }
+    .gomi-result .gomi-main { font-size:1em; font-weight:900; line-height:1.4; margin:6px 0; }
+    .gomi-result.garbage .gomi-main { color:#d65a3d; }
+    .gomi-result.weather .gomi-main { color:#1765ad; }
+    .gomi-result .gomi-detail { font-size:0.72em; color:#777; line-height:1.6; }
+    .gomi-collected { margin-top:12px; padding:10px 12px; border-radius:10px; background:#f4f6f4; border:1px solid #dde5dd; font-size:0.78em; color:#5b6b5b; line-height:1.9; text-align:center; }
+    .gomi-setting-again { text-align:center; margin-top:12px; }
+    @media (max-width:480px) {
+      .gomi-form-grid, .gomi-results { grid-template-columns:1fr; }
+      .gomi-date-row { align-items:flex-start; flex-direction:column; }
+    }
+
+    /* -------------------------------------------------- */
     /* 読書コーナー */
     /* -------------------------------------------------- */
     .book-container {
@@ -386,6 +433,57 @@
 
     <p class="subtitle-text">現在、MacBook AirとGitHubを使ってWEB制作を学習中です。</p>
   </div>
+
+  <!-- ゴミの日お天気占い -->
+  <section>
+    <h2 style="font-size: 1.2em; color: #333; margin-bottom: 12px;">🔮 ゴミの日お天気占い</h2>
+
+    <div class="gomi-container">
+      <div class="gomi-intro">生まれた年・星座・住んでいる町名から<br><strong>今日出せるゴミの種類と今日の天気を占います。</strong></div>
+
+      <div class="gomi-notice">占いに使う情報はお使いのブラウザに保存されます。また、一部の情報はサイト運営の参考として集計する場合があります。</div>
+      <div class="gomi-datasrc" id="gomi-dataSrcNotice">🗑️ ゴミの収集日は浜松市公式オープンデータを使用しています。🌤️ 天気は気象庁の公式データ(静岡県西部)をその場で取得しています。</div>
+
+      <div class="gomi-form-area" id="gomi-formArea">
+        <div class="gomi-form-grid">
+          <div><label for="gomi-birthYear">生まれた年</label><select id="gomi-birthYear"></select></div>
+          <div><label for="gomi-zodiac">星座</label>
+            <select id="gomi-zodiac">
+              <option value="4">牡羊座</option><option value="5">牡牛座</option><option value="6">双子座</option>
+              <option value="7">蟹座</option><option value="8">獅子座</option><option value="9">乙女座</option>
+              <option value="10">天秤座</option><option value="11">蠍座</option><option value="12">射手座</option>
+              <option value="1">山羊座</option><option value="2">水瓶座</option><option value="3">魚座</option>
+            </select>
+          </div>
+          <div><label for="gomi-blood">血液型</label><select id="gomi-blood"><option>A型</option><option>B型</option><option>O型</option><option>AB型</option></select></div>
+          <div><label for="gomi-gender">性別</label><select id="gomi-gender"><option>女性</option><option>男性</option><option>回答しない</option></select></div>
+          <div style="grid-column:1/-1"><label for="gomi-district">住んでいる町名</label>
+            <select id="gomi-district"><option value="">読み込み中…</option></select>
+          </div>
+        </div>
+        <div class="gomi-start"><button type="button" class="gomi-btn" id="gomi-fortuneButton" disabled>🔮 占ってみる</button></div>
+      </div>
+
+      <div class="gomi-result-area" id="gomi-resultArea">
+        <div class="gomi-date-row"><div class="gomi-date" id="gomi-dateText"></div><div>地区：<strong id="gomi-areaText"></strong></div></div>
+        <div class="gomi-heading">あなたの今日の運勢は…</div>
+        <div class="gomi-results">
+          <article class="gomi-result garbage">
+            <div class="gomi-label">🔮 今日のゴミ運勢</div>
+            <div class="gomi-main" id="gomi-garbageMain"></div>
+            <div class="gomi-detail" id="gomi-garbageDetail"></div>
+          </article>
+          <article class="gomi-result weather">
+            <div class="gomi-label">🔮 今日のお天気運勢</div>
+            <div class="gomi-main" id="gomi-weatherMain">占い中…</div>
+            <div class="gomi-detail" id="gomi-weatherDetail"></div>
+          </article>
+        </div>
+        <div class="gomi-collected" id="gomi-collectedBox"></div>
+        <div class="gomi-setting-again"><button type="button" class="gomi-btn-secondary" id="gomi-changeButton">⚙ 設定を変更</button></div>
+      </div>
+    </div>
+  </section>
 
   <!-- 最近読み終わった本コーナー -->
   <section>
@@ -629,6 +727,274 @@
     }, (error) => {
       console.error('WhatsNew read error:', error);
     });
+  </script>
+
+  <!-- ゴミの日お天気占い ロジック -->
+  <script>
+  (function(){
+    const FIREBASE_DB_URL = "https://andydandy-counter-default-rtdb.firebaseio.com";
+    const JMA_URL = "https://www.jma.go.jp/bosai/forecast/data/forecast/220000.json";
+
+    const STORAGE_KEY="andy-gomi-weather-profile";
+    const FLAG_KEY="andy-gomi-has-counted";
+    const LASTDATE_KEY="andy-gomi-last-count-date";
+
+    const formArea=document.getElementById("gomi-formArea");
+    const resultArea=document.getElementById("gomi-resultArea");
+    const district=document.getElementById("gomi-district");
+    const birthYearSel=document.getElementById("gomi-birthYear");
+    const fortuneButton=document.getElementById("gomi-fortuneButton");
+
+    let CURRENT_DATA=null;
+
+    (function fillYears(){
+      const nowYear=new Date().getFullYear();
+      for(let y=nowYear-9;y>=nowYear-90;y--){
+        const op=document.createElement("option");
+        op.value=y; op.textContent=y+"年";
+        birthYearSel.appendChild(op);
+      }
+    })();
+
+    function todayText(){
+      const d=new Date(),days=["日","月","火","水","木","金","土"];
+      return `${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+    }
+    function after830(){
+      const d=new Date();
+      return d.getHours()>8 || (d.getHours()===8 && d.getMinutes()>=30);
+    }
+    function localDateKey(offsetDays){
+      const d=new Date();
+      if(offsetDays) d.setDate(d.getDate()+offsetDays);
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    }
+    function monthKey(){
+      const d=new Date();
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    }
+    function toAgeBand(birthYear){
+      const age=new Date().getFullYear()-Number(birthYear);
+      if(age<10) return "10代未満";
+      if(age>=80) return "80代以上";
+      return Math.floor(age/10)*10+"代";
+    }
+    const zodiacLabels={"1":"山羊座","2":"水瓶座","3":"魚座","4":"牡羊座","5":"牡牛座","6":"双子座","7":"蟹座","8":"獅子座","9":"乙女座","10":"天秤座","11":"蠍座","12":"射手座"};
+
+    function fiscalYearFor(date){
+      const y=date.getFullYear(), m=date.getMonth()+1;
+      return m>=4 ? y : y-1;
+    }
+
+    function isValidData(d, expectedYear){
+      return !!d && typeof d==="object"
+        && d.fiscalYear===expectedYear
+        && d.towns && typeof d.towns==="object" && Object.keys(d.towns).length>0
+        && d.regions && typeof d.regions==="object" && Object.keys(d.regions).length>0
+        && typeof d.townCount==="number" && d.townCount>0;
+    }
+
+    function loadFiscalYearData(){
+      const year=fiscalYearFor(new Date());
+      return fetch(`data/${year}/data.json`)
+        .then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+        .then(json=>{
+          if(!isValidData(json, year)) throw new Error("data.jsonの構造が不正です(年度:"+year+")");
+          CURRENT_DATA=json;
+          fillTowns();
+          district.disabled=false;
+          fortuneButton.disabled=false;
+          document.getElementById("gomi-dataSrcNotice").textContent=
+            `🗑️ ゴミの収集日は浜松市公式オープンデータ(${year}年度・全${json.townCount}町対応)を使用しています。🌤️ 天気は気象庁の公式データ(静岡県西部)をその場で取得しています。`;
+        })
+        .catch(err=>{
+          console.warn("年度データの読み込みに失敗しました:", err);
+          CURRENT_DATA=null;
+          district.innerHTML='<option value="">(データ取得エラー)</option>';
+          district.disabled=true;
+          fortuneButton.disabled=false;
+          const el=document.getElementById("gomi-dataSrcNotice");
+          el.className="gomi-datasrc err";
+          el.textContent="⚠️ ごみ収集データを取得できませんでした。地区の選択はできませんが、天気占いはご利用いただけます。";
+        });
+    }
+
+    function fillTowns(){
+      district.innerHTML="";
+      const order=["中央区","浜名区","天竜区"];
+      order.forEach(ward=>{
+        const list=CURRENT_DATA.towns[ward];
+        if(!list) return;
+        const og=document.createElement("optgroup");
+        og.label=ward;
+        list.forEach(([town,no])=>{
+          const op=document.createElement("option");
+          op.value=no;
+          op.textContent=town;
+          op.dataset.town=town;
+          og.appendChild(op);
+        });
+        district.appendChild(og);
+      });
+    }
+    function currentDistrictName(){
+      const op=district.options[district.selectedIndex];
+      return op?(op.dataset.town||op.textContent):"";
+    }
+
+    function getGarbageInfo(regionNo){
+      if(!CURRENT_DATA) return {status:"nodata",today:null,next:null};
+      const region=CURRENT_DATA.regions[String(regionNo)];
+      const todayKey=localDateKey(0);
+      if(!region || !(todayKey in region)){
+        return {status:"nodata",today:null,next:null};
+      }
+      const today=region[todayKey]||null;
+      let next=null;
+      if(today){
+        for(let i=1;i<=60;i++){
+          const key=localDateKey(i);
+          if(region[key]===today){
+            const d=new Date(key);
+            next=`${d.getMonth()+1}月${d.getDate()}日`;
+            break;
+          }
+        }
+      }
+      return {status:today?"collection":"none",today,next};
+    }
+
+    function fetchWeather(){
+      return fetch(JMA_URL)
+        .then(r=>r.json())
+        .then(json=>{
+          const series=json[0].timeSeries[0];
+          const idx=series.areas.findIndex(a=>a.area.name.includes("西部"));
+          if(idx===-1) throw new Error("西部エリアが見つかりません");
+          const area=series.areas[idx];
+          return { text: area.weathers[0].replace(/\s+/g," ").trim(), reportedAt: json[0].reportDatetime };
+        });
+    }
+
+    function incrementCounter(path){
+      const url=`${FIREBASE_DB_URL}/${path}.json`;
+      return fetch(url,{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({".sv":{"increment":1}})
+      }).then(r=>{
+        if(!r.ok) throw new Error("Firebase write failed: "+r.status);
+        return r;
+      });
+    }
+    function recordCount(kind,d,ageBand,gender,blood,zodiacLabel){
+      const m=monthKey();
+      const paths=[
+        `gomiUranai/${m}/${kind}/total`,
+        `gomiUranai/${m}/${kind}/district/${encodeURIComponent(d)}`,
+        `gomiUranai/${m}/${kind}/age/${encodeURIComponent(ageBand)}`,
+        `gomiUranai/${m}/${kind}/gender/${encodeURIComponent(gender)}`,
+        `gomiUranai/${m}/${kind}/blood/${encodeURIComponent(blood)}`,
+        `gomiUranai/${m}/${kind}/zodiac/${encodeURIComponent(zodiacLabel)}`
+      ];
+      return Promise.allSettled(paths.map(incrementCounter));
+    }
+
+    function renderGarbageWeather(regionNo){
+      const g=getGarbageInfo(regionNo);
+      if(g.status==="nodata"){
+        document.getElementById("gomi-garbageMain").textContent="占うことができませんでした。";
+        document.getElementById("gomi-garbageDetail").textContent="念のため浜松市公式のごみ収集カレンダーをご確認ください。";
+      } else if(g.status==="none"){
+        document.getElementById("gomi-garbageMain").textContent="今日は回収がありません。";
+        document.getElementById("gomi-garbageDetail").textContent="";
+      } else if(after830()){
+        document.getElementById("gomi-garbageMain").textContent="今日は「"+g.today+"」の収集日でした";
+        document.getElementById("gomi-garbageDetail").textContent=g.next?("次回は "+g.next+" の予定です"):"";
+      } else {
+        document.getElementById("gomi-garbageMain").textContent=g.today+"が出せそうです。";
+        document.getElementById("gomi-garbageDetail").textContent="8:30までに出してください";
+      }
+    }
+
+    function showResult(){
+      const regionNo=CURRENT_DATA?district.value:null;
+      const dName=CURRENT_DATA?currentDistrictName():"";
+      const gender=document.getElementById("gomi-gender").value;
+      const blood=document.getElementById("gomi-blood").value;
+      const birthYear=birthYearSel.value;
+      const zodiacStart=document.getElementById("gomi-zodiac").value;
+      const ageBand=toAgeBand(birthYear);
+      const zodiacLabel=zodiacLabels[zodiacStart];
+
+      document.getElementById("gomi-dateText").textContent=todayText();
+      document.getElementById("gomi-areaText").textContent=dName||"(未取得)";
+      renderGarbageWeather(regionNo);
+
+      document.getElementById("gomi-weatherMain").textContent="占い中…";
+      document.getElementById("gomi-weatherDetail").textContent="";
+      fetchWeather().then(w=>{
+        document.getElementById("gomi-weatherMain").textContent="天気は"+w.text+"になりそうです。";
+        document.getElementById("gomi-weatherDetail").textContent="気象庁 発表:"+new Date(w.reportedAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+      }).catch(()=>{
+        document.getElementById("gomi-weatherMain").textContent="占うことができませんでした。";
+        document.getElementById("gomi-weatherDetail").textContent="念のため気象庁の発表をご確認ください。";
+      });
+
+      formArea.classList.add("closed");
+      resultArea.classList.add("open");
+
+      clearInterval(window.__gomiBoundaryTimer);
+      if(regionNo) window.__gomiBoundaryTimer=setInterval(()=>renderGarbageWeather(regionNo),30000);
+
+      localStorage.setItem(STORAGE_KEY,JSON.stringify({district:regionNo,townName:dName,birthYear,zodiac:zodiacStart,gender,blood}));
+
+      const box=document.getElementById("gomi-collectedBox");
+      box.className="gomi-collected";
+      box.textContent="🔮 こんなの出ました。";
+
+      if(!dName) return;
+
+      const today=localDateKey(0);
+      const lastDate=localStorage.getItem(LASTDATE_KEY);
+      if(lastDate===today) return;
+
+      const isNew=!localStorage.getItem(FLAG_KEY);
+      const kind=isNew?"new":"repeat";
+      recordCount(kind,dName,ageBand,gender,blood,zodiacLabel).then(results=>{
+        const failed=results.some(r=>r.status==="rejected");
+        localStorage.setItem(LASTDATE_KEY,today);
+        if(isNew) localStorage.setItem(FLAG_KEY,"1");
+        if(failed) console.warn("集計への反映に失敗しました(セキュリティルール未設定の可能性)");
+      });
+    }
+
+    function openSettings(){
+      resultArea.classList.remove("open");
+      setTimeout(()=>formArea.classList.remove("closed"),180);
+    }
+
+    fortuneButton.addEventListener("click",showResult);
+    document.getElementById("gomi-changeButton").addEventListener("click",openSettings);
+
+    loadFiscalYearData().then(()=>{
+      const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+      if(saved && CURRENT_DATA){
+        if(saved.townName){
+          const match=Array.from(district.options).find(o=>o.dataset.town===saved.townName);
+          if(match) district.value=match.value;
+        } else if(saved.district){
+          district.value=saved.district;
+        }
+      }
+      if(saved){
+        if(saved.birthYear) birthYearSel.value=saved.birthYear;
+        if(saved.zodiac) document.getElementById("gomi-zodiac").value=saved.zodiac;
+        document.getElementById("gomi-gender").value=saved.gender||"回答しない";
+        if(saved.blood) document.getElementById("gomi-blood").value=saved.blood;
+      }
+    });
+  })();
   </script>
 </body>
 </html>
